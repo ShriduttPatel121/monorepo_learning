@@ -1,45 +1,51 @@
 import express from "express";
-import { PrismaClient } from "@repo/db/client"
+import db from "@repo/db/client"
 
 const app = express();
 app.use(express.json());
 
-const db = new PrismaClient();
-
-app.post("hdfcWebhook", async (req, res) => {
+app.post("/hdfcWebhook", async (req, res) => {
 
     //TODO: check with a secret, whether request came from the HDFC bank only
     //TODO: Zod validation
-    const paymentInfo = {
+    const paymentInformation: {
+        token: string;
+        userId: string;
+        amount: string
+    } = {
         token: req.body.token,
         userId: req.body.user_identifier,
-        amount: req.body.amount,
-    }
+        amount: req.body.amount
+    };
 
-    db.$transaction(async tx => {
-
-        await tx.balance.update({
-            where: {
-                userId: req.body.userId
-            },
-            data: {
-                amount: {
-                    increment: req.body.amount // need to check whether DB will apply locks and update the balance
-                }
-            }
-        });
+    try {
+        await db.$transaction(async tx => {
     
-        await tx.onRampTransaction.update({
-            where: {
-                token: paymentInfo.token
-            },
-            data: {
-                status: "Success"
-            }
-        });
-    })
-
-
-
-    return res.json({ message: "captured" });
+            await tx.balance.update({
+                where: {
+                    userId: +paymentInformation.userId
+                },
+                data: {
+                    amount: {
+                        increment: +paymentInformation.amount // need to check whether DB will apply locks and update the balance
+                    }
+                }
+            });
+        
+            await tx.onRampTransaction.update({
+                where: {
+                    token: paymentInformation.token
+                },
+                data: {
+                    status: "Success"
+                }
+            });
+        })
+    
+    
+    
+        return res.json({ message: "captured" });
+    } catch (error) {
+        return res.status(411).json({ message: "error happened while processing the payment"})
+    }
 })

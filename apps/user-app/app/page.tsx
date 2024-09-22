@@ -1,17 +1,12 @@
-import { Button } from "@repo/ui/button";
-import { PrismaClient } from "@repo/db/client"
+import { getServerSession } from "next-auth";
+import { redirect } from 'next/navigation'
+import { authOptions } from "./lib/auth";
 
-
-import { DarkThemeToggle } from "flowbite-react";
-import React from "react";
-
-export default function Home() {
-  return (
-    <div>
-      <main>
-        <DarkThemeToggle />
-        <Button appName="tewt">ret</Button>
-      </main>
-    </div>
-  );
+export default async function Page() {
+  const session = await getServerSession(authOptions);
+  if (session?.user) {
+    redirect('/dashboard')
+  } else {
+    redirect('/api/auth/signin')
+  }
 }
