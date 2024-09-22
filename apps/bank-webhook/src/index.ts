@@ -48,4 +48,9 @@ app.post("/hdfcWebhook", async (req, res) => {
     } catch (error) {
         return res.status(411).json({ message: "error happened while processing the payment"})
     }
+});
+
+
+app.listen(3005, () => {
+    console.log("BANK WEBHOOK SERVER STARTED ON 3005");
 })
